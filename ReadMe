@@ -42,8 +42,8 @@ diff -u file_simplified.ll file_dse.ll
 
 Run All Tests
 -------------
-chmod +x run_dse_tests.sh  
-./run_dse_tests.sh
+chmod +x run_dse_test.sh  
+./run_dse_test.sh
 
 Runs DSE on all test/*.c and prints diffs.
 
