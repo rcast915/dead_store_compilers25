@@ -1,0 +1,55 @@
+Dead Store Elimination + MemorySSA 
+================================================
+
+Note this folder expects to be placed within LLVM tutor
+
+Build the Plugin
+----------------
+Inside the dead_store folder:
+
+clang++ -std=c++17 -fPIC -shared MemorySSADemo.cpp \
+  -o libMemorySSADemo.dylib \
+  $(llvm-config --cxxflags --ldflags --system-libs --libs core analysis transformutils passes)
+
+
+Run MemorySSA Demo
+------------------
+1) Compile to LLVM IR:
+clang -O0 -Xclang -disable-O0-optnone -S -emit-llvm file.c -o file.ll
+
+2) Run mem2reg:
+opt -passes=mem2reg file.ll -S -o file_simplified.ll
+
+3) Run memssa demo:
+opt -load-pass-plugin=./libMemorySSADemo.dylib \
+    -passes="memssa-demo" \
+    -disable-output file_simplified.ll
+
+This prints MemorySSA info and writes:  
+file.memssa.dot  
+(Use `dot -Tpdf file.memssa.dot -o file.pdf` to view.)
+
+
+Run Dead Store Elimination
+--------------------------
+opt -load-pass-plugin=./libMemorySSADemo.dylib \
+    -passes="dead-store-elim" \
+    -S file_simplified.ll -o file_dse.ll
+
+Compare results:
+diff -u file_simplified.ll file_dse.ll
+
+
+Run All Tests
+-------------
+chmod +x run_dse_tests.sh  
+./run_dse_tests.sh
+
+Runs DSE on all test/*.c and prints diffs.
+
+
+Files
+-----
+MemorySSADemo.cpp  – MemorySSA printer + DOT graph + DSE pass  
+test/*.c           – DSE test cases  
+run_dse_tests.sh   – automated test runner
