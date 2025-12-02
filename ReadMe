@@ -1,66 +1,106 @@
 Dead Store Elimination + MemorySSA
 ==================================
 
-This directory contains a sample LLVM pass that demonstrates MemorySSA
-and a simple dead store elimination. Place this folder inside the LLVM
-Tutor project layout.
+This directory provides a simple LLVM pass that demonstrates the use of
+MemorySSA and a basic dead-store-elimination (DSE) pass.
 
 Build the Plugin
 ----------------
-From inside the `dead_store` directory, build the shared library:
+From inside the `dead_store` folder:
 
 /usr/bin/clang++ -std=c++17 -fPIC -shared MemorySSADemo.cpp \
     -o libMemorySSADemo.dylib \
     $(llvm-config --cxxflags --ldflags --system-libs --libs core analysis transformutils passes)
 
 
-Running the MemorySSA Demo
---------------------------
-The commands below assume a source file named `file.c`. Replace `file.c`
-with any test file you want (e.g., `test1.c`, `demo.c`).
 
-1) Generate LLVM IR:
-clang -O0 -Xclang -disable-O0-optnone -S -emit-llvm file.c -o file.ll
+==============================
+ Generic Workflow (Any File)
+==============================
+
+Replace `input.c` with any .c file (example: dse1.c, test1.c, etc.)
+
+1) Compile source to LLVM IR:
+clang -O0 -Xclang -disable-O0-optnone -S -emit-llvm input.c -o input.ll
 
 2) Run mem2reg:
-opt -passes=mem2reg file.ll -S -o file_simplified.ll
+opt -passes=mem2reg input.ll -S -o input_simplified.ll
 
-3) Run the MemorySSA demo pass:
+3) Run MemorySSA demo:
 opt -load-pass-plugin=./libMemorySSADemo.dylib \
     -passes="memssa-demo" \
-    -disable-output file_simplified.ll
+    -disable-output input_simplified.ll
 
-This prints MemorySSA information and produces:
-file.memssa.dot
+This prints MemorySSA info and produces:
+input.memssa.dot
 
-Convert the DOT file to PDF with:
-dot -Tpdf file.memssa.dot -o file.pdf
+Convert to PDF (optional):
+dot -Tpdf input.memssa.dot -o input.pdf
 
-
-Running Dead Store Elimination
-------------------------------
-Run the dead store elimination pass on the simplified IR:
-
+4) Run Dead Store Elimination:
 opt -load-pass-plugin=./libMemorySSADemo.dylib \
     -passes="dead-store-elim" \
-    -S file_simplified.ll -o file_dse.ll
+    -S input_simplified.ll -o input_dse.ll
 
-Compare outputs:
-diff -u file_simplified.ll file_dse.ll
+5) Compare:
+diff -u input_simplified.ll input_dse.ll
 
 
-Running All Tests
------------------
-To run the pass on every test case in `test/*.c`:
+
+====================================================
+ Worked Example (Demonstrating Real Dead Store Removal)
+====================================================
+
+This example uses the file: dse1.c
+
+1) Generate LLVM IR:
+clang -O0 -Xclang -disable-O0-optnone -S -emit-llvm dse1.c -o dse1.ll
+
+2) Apply mem2reg:
+opt -passes=mem2reg dse1.ll -S -o dse1_simplified.ll
+
+3) Run MemorySSA demo:
+opt -load-pass-plugin=./libMemorySSADemo.dylib \
+    -passes="memssa-demo" \
+    -disable-output dse1_simplified.ll
+
+(Produces: dse1.memssa.dot)
+
+4) Run the DSE pass:
+opt -load-pass-plugin=./libMemorySSADemo.dylib \
+    -passes="dead-store-elim" \
+    -S dse1_simplified.ll -o dse1_dse.ll
+
+5) Check what changed:
+diff -u dse1_simplified.ll dse1_dse.ll
+
+In this example, you should see a store removed, confirming that
+the pass is functioning.
+
+
+
+Run All Tests
+-------------
+To execute DSE on every file in test/:
 
 chmod +x run_dse_test.sh
 ./run_dse_test.sh
 
-This compiles each test, applies DSE, and prints the diffs.
+This compiles each test and prints diffs.
 
 
-Files
------
-MemorySSADemo.cpp   – Implementation of MemorySSA printing and DSE  
-test/*.c            – Test programs for validating DSE  
-run_dse_test.sh     – Script to compile and run DSE on all tests
+Cleaning Generated Files
+------------------------
+Use the provided clean.sh script to remove *.ll, *.dot, *.pdf:
+
+./clean.sh
+
+
+File Overview
+-------------
+MemorySSADemo.cpp        – MemorySSA + DSE pass
+libMemorySSADemo.dylib   – Compiled plugin
+test/*.c                 – DSE test cases
+run_dse_test.sh          – Automated test runner
+clean.sh                 – Removes generated build artifacts
+
