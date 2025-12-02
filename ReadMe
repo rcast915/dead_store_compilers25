@@ -1,56 +1,66 @@
-Dead Store Elimination + MemorySSA 
-================================================
+Dead Store Elimination + MemorySSA
+==================================
 
-Note this folder expects to be placed within LLVM tutor
+This directory contains a sample LLVM pass that demonstrates MemorySSA
+and a simple dead store elimination. Place this folder inside the LLVM
+Tutor project layout.
 
 Build the Plugin
 ----------------
-Inside the dead_store folder:
+From inside the `dead_store` directory, build the shared library:
 
 /usr/bin/clang++ -std=c++17 -fPIC -shared MemorySSADemo.cpp \
-  -o libMemorySSADemo.dylib \
-  $(llvm-config --cxxflags --ldflags --system-libs --libs core analysis transformutils passes)
+    -o libMemorySSADemo.dylib \
+    $(llvm-config --cxxflags --ldflags --system-libs --libs core analysis transformutils passes)
 
 
+Running the MemorySSA Demo
+--------------------------
+The commands below assume a source file named `file.c`. Replace `file.c`
+with any test file you want (e.g., `test1.c`, `demo.c`).
 
-Run MemorySSA Demo
-------------------
-1) Compile to LLVM IR:
+1) Generate LLVM IR:
 clang -O0 -Xclang -disable-O0-optnone -S -emit-llvm file.c -o file.ll
 
 2) Run mem2reg:
 opt -passes=mem2reg file.ll -S -o file_simplified.ll
 
-3) Run memssa demo:
+3) Run the MemorySSA demo pass:
 opt -load-pass-plugin=./libMemorySSADemo.dylib \
     -passes="memssa-demo" \
     -disable-output file_simplified.ll
 
-This prints MemorySSA info and writes:  
-file.memssa.dot  
-(Use `dot -Tpdf file.memssa.dot -o file.pdf` to view.)
+This prints MemorySSA information and produces:
+file.memssa.dot
+
+Convert the DOT file to PDF with:
+dot -Tpdf file.memssa.dot -o file.pdf
 
 
-Run Dead Store Elimination
---------------------------
+Running Dead Store Elimination
+------------------------------
+Run the dead store elimination pass on the simplified IR:
+
 opt -load-pass-plugin=./libMemorySSADemo.dylib \
     -passes="dead-store-elim" \
     -S file_simplified.ll -o file_dse.ll
 
-Compare results:
+Compare outputs:
 diff -u file_simplified.ll file_dse.ll
 
 
-Run All Tests
--------------
-chmod +x run_dse_test.sh  
+Running All Tests
+-----------------
+To run the pass on every test case in `test/*.c`:
+
+chmod +x run_dse_test.sh
 ./run_dse_test.sh
 
-Runs DSE on all test/*.c and prints diffs.
+This compiles each test, applies DSE, and prints the diffs.
 
 
 Files
 -----
-MemorySSADemo.cpp  – MemorySSA printer + DOT graph + DSE pass  
-test/*.c           – DSE test cases  
-run_dse_tests.sh   – automated test runner
+MemorySSADemo.cpp   – Implementation of MemorySSA printing and DSE  
+test/*.c            – Test programs for validating DSE  
+run_dse_test.sh     – Script to compile and run DSE on all tests
