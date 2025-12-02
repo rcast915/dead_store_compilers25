@@ -7,9 +7,10 @@ Build the Plugin
 ----------------
 Inside the dead_store folder:
 
-clang++ -std=c++17 -fPIC -shared MemorySSADemo.cpp \
+/usr/bin/clang++ -std=c++17 -fPIC -shared MemorySSADemo.cpp \
   -o libMemorySSADemo.dylib \
   $(llvm-config --cxxflags --ldflags --system-libs --libs core analysis transformutils passes)
+
 
 
 Run MemorySSA Demo
